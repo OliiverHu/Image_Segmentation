@@ -3,6 +3,7 @@ import torch
 # SR : Segmentation Result
 # GT : Ground Truth
 
+
 def get_accuracy(SR,GT,threshold=0.5):
     SR = SR > threshold
     GT = GT == torch.max(GT)
@@ -12,7 +13,8 @@ def get_accuracy(SR,GT,threshold=0.5):
 
     return acc
 
-def get_sensitivity(SR,GT,threshold=0.5):
+
+def get_sensitivity(SR, GT, threshold=0.5):
     # Sensitivity == Recall
     SR = SR > threshold
     GT = GT == torch.max(GT)
@@ -25,6 +27,7 @@ def get_sensitivity(SR,GT,threshold=0.5):
     SE = float(torch.sum(TP))/(float(torch.sum(TP+FN)) + 1e-6)     
     
     return SE
+
 
 def get_specificity(SR,GT,threshold=0.5):
     SR = SR > threshold
@@ -39,6 +42,7 @@ def get_specificity(SR,GT,threshold=0.5):
     
     return SP
 
+
 def get_precision(SR,GT,threshold=0.5):
     SR = SR > threshold
     GT = GT == torch.max(GT)
@@ -52,6 +56,7 @@ def get_precision(SR,GT,threshold=0.5):
 
     return PC
 
+
 def get_F1(SR,GT,threshold=0.5):
     # Sensitivity == Recall
     SE = get_sensitivity(SR,GT,threshold=threshold)
@@ -60,6 +65,7 @@ def get_F1(SR,GT,threshold=0.5):
     F1 = 2*SE*PC/(SE+PC + 1e-6)
 
     return F1
+
 
 def get_JS(SR,GT,threshold=0.5):
     # JS : Jaccard similarity
@@ -72,6 +78,7 @@ def get_JS(SR,GT,threshold=0.5):
     JS = float(Inter)/(float(Union) + 1e-6)
     
     return JS
+
 
 def get_DC(SR,GT,threshold=0.5):
     # DC : Dice Coefficient

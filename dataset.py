@@ -3,15 +3,16 @@ import argparse
 import random
 import shutil
 from shutil import copyfile
-from misc import printProgressBar
+from misc import print_progress_bar
 
 
 def rm_mkdir(dir_path):
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
-        print('Remove path - %s'%dir_path)
+        print('Remove path - %s' % dir_path)
     os.makedirs(dir_path)
-    print('Create path - %s'%dir_path)
+    print('Create path - %s' % dir_path)
+
 
 def main(config):
 
@@ -28,7 +29,7 @@ def main(config):
 
     for filename in filenames:
         ext = os.path.splitext(filename)[-1]
-        if ext =='.jpg':
+        if ext == '.jpg':
             filename = filename.split('_')[-1][:-len('.jpg')]
             data_list.append('ISIC_'+filename+'.jpg')
             GT_list.append('ISIC_'+filename+'_segmentation.png')
@@ -38,9 +39,9 @@ def main(config):
     num_valid = int((config.valid_ratio/(config.train_ratio+config.valid_ratio+config.test_ratio))*num_total)
     num_test = num_total - num_train - num_valid
 
-    print('\nNum of train set : ',num_train)
-    print('\nNum of valid set : ',num_valid)
-    print('\nNum of test set : ',num_test)
+    print('\nNum of train set : ', num_train)
+    print('\nNum of valid set : ', num_valid)
+    print('\nNum of test set : ', num_test)
 
     Arange = list(range(num_total))
     random.shuffle(Arange)
@@ -56,8 +57,7 @@ def main(config):
         dst = os.path.join(config.train_GT_path, GT_list[idx])
         copyfile(src, dst)
 
-        printProgressBar(i + 1, num_train, prefix = 'Producing train set:', suffix = 'Complete', length = 50)
-        
+        print_progress_bar(i + 1, num_train, prefix ='Producing train set:', suffix ='Complete', length = 50)
 
     for i in range(num_valid):
         idx = Arange.pop()
@@ -70,7 +70,7 @@ def main(config):
         dst = os.path.join(config.valid_GT_path, GT_list[idx])
         copyfile(src, dst)
 
-        printProgressBar(i + 1, num_valid, prefix = 'Producing valid set:', suffix = 'Complete', length = 50)
+        print_progress_bar(i + 1, num_valid, prefix ='Producing valid set:', suffix ='Complete', length = 50)
 
     for i in range(num_test):
         idx = Arange.pop()
@@ -83,13 +83,12 @@ def main(config):
         dst = os.path.join(config.test_GT_path, GT_list[idx])
         copyfile(src, dst)
 
+        print_progress_bar(i + 1, num_test, prefix ='Producing test set:', suffix ='Complete', length = 50)
 
-        printProgressBar(i + 1, num_test, prefix = 'Producing test set:', suffix = 'Complete', length = 50)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    
     # model hyper-parameters
     parser.add_argument('--train_ratio', type=float, default=0.6)
     parser.add_argument('--valid_ratio', type=float, default=0.2)

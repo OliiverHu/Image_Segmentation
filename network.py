@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
 
+
 def init_weights(net, init_type='normal', gain=0.02):
     def init_func(m):
         classname = m.__class__.__name__
@@ -26,65 +27,68 @@ def init_weights(net, init_type='normal', gain=0.02):
     print('initialize network with %s' % init_type)
     net.apply(init_func)
 
-class conv_block(nn.Module):
-    def __init__(self,ch_in,ch_out):
-        super(conv_block,self).__init__()
+
+class ConvBlock(nn.Module):
+    def __init__(self, ch_in, ch_out):
+        super(ConvBlock, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(ch_in, ch_out, kernel_size=3,stride=1,padding=1,bias=True),
+            nn.Conv2d(ch_in, ch_out, kernel_size=3, stride=1, padding=1, bias=True),
             nn.BatchNorm2d(ch_out),
             nn.ReLU(inplace=True),
-            nn.Conv2d(ch_out, ch_out, kernel_size=3,stride=1,padding=1,bias=True),
+            nn.Conv2d(ch_out, ch_out, kernel_size=3, stride=1, padding=1, bias=True),
             nn.BatchNorm2d(ch_out),
             nn.ReLU(inplace=True)
         )
 
-
-    def forward(self,x):
+    def forward(self, x):
         x = self.conv(x)
         return x
 
-class up_conv(nn.Module):
-    def __init__(self,ch_in,ch_out):
-        super(up_conv,self).__init__()
+
+class UpConv(nn.Module):
+    def __init__(self, ch_in, ch_out):
+        super(UpConv, self).__init__()
         self.up = nn.Sequential(
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(ch_in,ch_out,kernel_size=3,stride=1,padding=1,bias=True),
-		    nn.BatchNorm2d(ch_out),
-			nn.ReLU(inplace=True)
+            nn.Conv2d(ch_in, ch_out, kernel_size=3, stride=1, padding=1, bias=True),
+            nn.BatchNorm2d(ch_out),
+            nn.ReLU(inplace=True)
         )
 
-    def forward(self,x):
+    def forward(self, x):
         x = self.up(x)
         return x
 
+
 class Recurrent_block(nn.Module):
-    def __init__(self,ch_out,t=2):
-        super(Recurrent_block,self).__init__()
+    def __init__(self, ch_out, t=2):
+        super(Recurrent_block, self).__init__()
         self.t = t
         self.ch_out = ch_out
         self.conv = nn.Sequential(
-            nn.Conv2d(ch_out,ch_out,kernel_size=3,stride=1,padding=1,bias=True),
-		    nn.BatchNorm2d(ch_out),
-			nn.ReLU(inplace=True)
+            nn.Conv2d(ch_out, ch_out, kernel_size=3, stride=1, padding=1, bias=True),
+            nn.BatchNorm2d(ch_out),
+            nn.ReLU(inplace=True)
         )
 
-    def forward(self,x):
+    def forward(self, x):
         for i in range(self.t):
 
-            if i==0:
+            if i == 0:
                 x1 = self.conv(x)
             
             x1 = self.conv(x+x1)
         return x1
-        
+
+
 class RRCNN_block(nn.Module):
-    def __init__(self,ch_in,ch_out,t=2):
-        super(RRCNN_block,self).__init__()
+    def __init__(self, ch_in, ch_out, t=2):
+        super(RRCNN_block, self).__init__()
         self.RCNN = nn.Sequential(
-            Recurrent_block(ch_out,t=t),
-            Recurrent_block(ch_out,t=t)
+            Recurrent_block(ch_out, t=t),
+            Recurrent_block(ch_out, t=t)
         )
-        self.Conv_1x1 = nn.Conv2d(ch_in,ch_out,kernel_size=1,stride=1,padding=0)
+        self.Conv_1x1 = nn.Conv2d(ch_in, ch_out, kernel_size=1, stride=1, padding=0)
 
     def forward(self,x):
         x = self.Conv_1x1(x)
@@ -104,6 +108,7 @@ class single_conv(nn.Module):
     def forward(self,x):
         x = self.conv(x)
         return x
+
 
 class Attention_block(nn.Module):
     def __init__(self,F_g,F_l,F_int):
@@ -141,26 +146,25 @@ class U_Net(nn.Module):
         
         self.Maxpool = nn.MaxPool2d(kernel_size=2,stride=2)
 
-        self.Conv1 = conv_block(ch_in=img_ch,ch_out=64)
-        self.Conv2 = conv_block(ch_in=64,ch_out=128)
-        self.Conv3 = conv_block(ch_in=128,ch_out=256)
-        self.Conv4 = conv_block(ch_in=256,ch_out=512)
-        self.Conv5 = conv_block(ch_in=512,ch_out=1024)
+        self.Conv1 = ConvBlock(ch_in=img_ch, ch_out=64)
+        self.Conv2 = ConvBlock(ch_in=64, ch_out=128)
+        self.Conv3 = ConvBlock(ch_in=128, ch_out=256)
+        self.Conv4 = ConvBlock(ch_in=256, ch_out=512)
+        self.Conv5 = ConvBlock(ch_in=512, ch_out=1024)
 
-        self.Up5 = up_conv(ch_in=1024,ch_out=512)
-        self.Up_conv5 = conv_block(ch_in=1024, ch_out=512)
+        self.Up5 = UpConv(ch_in=1024, ch_out=512)
+        self.Up_conv5 = ConvBlock(ch_in=1024, ch_out=512)
 
-        self.Up4 = up_conv(ch_in=512,ch_out=256)
-        self.Up_conv4 = conv_block(ch_in=512, ch_out=256)
+        self.Up4 = UpConv(ch_in=512, ch_out=256)
+        self.Up_conv4 = ConvBlock(ch_in=512, ch_out=256)
         
-        self.Up3 = up_conv(ch_in=256,ch_out=128)
-        self.Up_conv3 = conv_block(ch_in=256, ch_out=128)
+        self.Up3 = UpConv(ch_in=256, ch_out=128)
+        self.Up_conv3 = ConvBlock(ch_in=256, ch_out=128)
         
-        self.Up2 = up_conv(ch_in=128,ch_out=64)
-        self.Up_conv2 = conv_block(ch_in=128, ch_out=64)
+        self.Up2 = UpConv(ch_in=128, ch_out=64)
+        self.Up_conv2 = ConvBlock(ch_in=128, ch_out=64)
 
         self.Conv_1x1 = nn.Conv2d(64,output_ch,kernel_size=1,stride=1,padding=0)
-
 
     def forward(self,x):
         # encoding path
@@ -217,22 +221,20 @@ class R2U_Net(nn.Module):
         self.RRCNN4 = RRCNN_block(ch_in=256,ch_out=512,t=t)
         
         self.RRCNN5 = RRCNN_block(ch_in=512,ch_out=1024,t=t)
-        
 
-        self.Up5 = up_conv(ch_in=1024,ch_out=512)
+        self.Up5 = UpConv(ch_in=1024, ch_out=512)
         self.Up_RRCNN5 = RRCNN_block(ch_in=1024, ch_out=512,t=t)
         
-        self.Up4 = up_conv(ch_in=512,ch_out=256)
+        self.Up4 = UpConv(ch_in=512, ch_out=256)
         self.Up_RRCNN4 = RRCNN_block(ch_in=512, ch_out=256,t=t)
         
-        self.Up3 = up_conv(ch_in=256,ch_out=128)
+        self.Up3 = UpConv(ch_in=256, ch_out=128)
         self.Up_RRCNN3 = RRCNN_block(ch_in=256, ch_out=128,t=t)
         
-        self.Up2 = up_conv(ch_in=128,ch_out=64)
+        self.Up2 = UpConv(ch_in=128, ch_out=64)
         self.Up_RRCNN2 = RRCNN_block(ch_in=128, ch_out=64,t=t)
 
         self.Conv_1x1 = nn.Conv2d(64,output_ch,kernel_size=1,stride=1,padding=0)
-
 
     def forward(self,x):
         # encoding path
@@ -272,34 +274,33 @@ class R2U_Net(nn.Module):
         return d1
 
 
-
 class AttU_Net(nn.Module):
     def __init__(self,img_ch=3,output_ch=1):
         super(AttU_Net,self).__init__()
         
         self.Maxpool = nn.MaxPool2d(kernel_size=2,stride=2)
 
-        self.Conv1 = conv_block(ch_in=img_ch,ch_out=64)
-        self.Conv2 = conv_block(ch_in=64,ch_out=128)
-        self.Conv3 = conv_block(ch_in=128,ch_out=256)
-        self.Conv4 = conv_block(ch_in=256,ch_out=512)
-        self.Conv5 = conv_block(ch_in=512,ch_out=1024)
+        self.Conv1 = ConvBlock(ch_in=img_ch, ch_out=64)
+        self.Conv2 = ConvBlock(ch_in=64, ch_out=128)
+        self.Conv3 = ConvBlock(ch_in=128, ch_out=256)
+        self.Conv4 = ConvBlock(ch_in=256, ch_out=512)
+        self.Conv5 = ConvBlock(ch_in=512, ch_out=1024)
 
-        self.Up5 = up_conv(ch_in=1024,ch_out=512)
+        self.Up5 = UpConv(ch_in=1024, ch_out=512)
         self.Att5 = Attention_block(F_g=512,F_l=512,F_int=256)
-        self.Up_conv5 = conv_block(ch_in=1024, ch_out=512)
+        self.Up_conv5 = ConvBlock(ch_in=1024, ch_out=512)
 
-        self.Up4 = up_conv(ch_in=512,ch_out=256)
+        self.Up4 = UpConv(ch_in=512, ch_out=256)
         self.Att4 = Attention_block(F_g=256,F_l=256,F_int=128)
-        self.Up_conv4 = conv_block(ch_in=512, ch_out=256)
+        self.Up_conv4 = ConvBlock(ch_in=512, ch_out=256)
         
-        self.Up3 = up_conv(ch_in=256,ch_out=128)
+        self.Up3 = UpConv(ch_in=256, ch_out=128)
         self.Att3 = Attention_block(F_g=128,F_l=128,F_int=64)
-        self.Up_conv3 = conv_block(ch_in=256, ch_out=128)
+        self.Up_conv3 = ConvBlock(ch_in=256, ch_out=128)
         
-        self.Up2 = up_conv(ch_in=128,ch_out=64)
+        self.Up2 = UpConv(ch_in=128, ch_out=64)
         self.Att2 = Attention_block(F_g=64,F_l=64,F_int=32)
-        self.Up_conv2 = conv_block(ch_in=128, ch_out=64)
+        self.Up_conv2 = ConvBlock(ch_in=128, ch_out=64)
 
         self.Conv_1x1 = nn.Conv2d(64,output_ch,kernel_size=1,stride=1,padding=0)
 
@@ -364,24 +365,23 @@ class R2AttU_Net(nn.Module):
         self.RRCNN5 = RRCNN_block(ch_in=512,ch_out=1024,t=t)
         
 
-        self.Up5 = up_conv(ch_in=1024,ch_out=512)
+        self.Up5 = UpConv(ch_in=1024, ch_out=512)
         self.Att5 = Attention_block(F_g=512,F_l=512,F_int=256)
         self.Up_RRCNN5 = RRCNN_block(ch_in=1024, ch_out=512,t=t)
         
-        self.Up4 = up_conv(ch_in=512,ch_out=256)
+        self.Up4 = UpConv(ch_in=512, ch_out=256)
         self.Att4 = Attention_block(F_g=256,F_l=256,F_int=128)
         self.Up_RRCNN4 = RRCNN_block(ch_in=512, ch_out=256,t=t)
         
-        self.Up3 = up_conv(ch_in=256,ch_out=128)
+        self.Up3 = UpConv(ch_in=256, ch_out=128)
         self.Att3 = Attention_block(F_g=128,F_l=128,F_int=64)
         self.Up_RRCNN3 = RRCNN_block(ch_in=256, ch_out=128,t=t)
         
-        self.Up2 = up_conv(ch_in=128,ch_out=64)
+        self.Up2 = UpConv(ch_in=128, ch_out=64)
         self.Att2 = Attention_block(F_g=64,F_l=64,F_int=32)
         self.Up_RRCNN2 = RRCNN_block(ch_in=128, ch_out=64,t=t)
 
         self.Conv_1x1 = nn.Conv2d(64,output_ch,kernel_size=1,stride=1,padding=0)
-
 
     def forward(self,x):
         # encoding path
